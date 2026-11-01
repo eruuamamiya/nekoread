@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0e0e10" />
+  <title>NekoRead — Baca Manga, Manhwa & Manhua</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%233b82f6'/%3E%3Cpath d='M20 16h8v32h-8zM36 16h8v32h-8z' fill='white' opacity='0'/%3E%3Cpath d='M18 46V18h6l16 20V18h6v28h-6L24 26v20z' fill='white'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #0e0e10;
+      --surface: #17171a;
+      --surface2: #1f1f24;
+      --line: #2a2a31;
+      --text: #ececef;
+      --muted: #9a9aa5;
+      --dim: #6b6b76;
+      --accent: #3b82f6;
+      --accent-h: #5b9bff;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0; min-height: 100vh;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.5;
+    }
+    a { color: inherit; }
+
+    /* ---------- Header ---------- */
+    header {
+      position: sticky; top: 0; z-index: 20;
+      background: #0e0e10ee; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .bar { max-width: 1180px; margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    a.logo { text-decoration: none; font-weight: 700; font-size: 1.2rem; letter-spacing: -.01em; }
+    a.logo span { color: var(--accent); }
+
+    #search { display: flex; gap: 8px; flex: 1; min-width: 220px; justify-content: flex-end; }
+    #q {
+      flex: 1; max-width: 380px; padding: 9px 12px; border-radius: 8px;
+      border: 1px solid var(--line); background: var(--surface); color: inherit; font-size: .92rem;
+    }
+    #q::placeholder { color: var(--dim); }
+    #q:focus { outline: none; border-color: var(--accent); }
+
+    #who { display: flex; align-items: center; }
+    .ava {
+      width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: var(--surface2); color: var(--text);
+      display: inline-flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 600;
+      border: 2px solid var(--bg); margin-left: -8px;
+    }
+    #who .ava:first-child { margin-left: 0; }
+
+    /* ---------- Layout & buttons ---------- */
+    main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 60px; }
+    button, .btn {
+      padding: 9px 16px; border: 0; border-radius: 8px;
+      background: var(--accent); color: #fff; font-size: .9rem; font-weight: 600; cursor: pointer;
+      text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    button:hover, .btn:hover { background: var(--accent-h); }
+    button:disabled, .btn.off { background: var(--surface2); color: var(--dim); cursor: not-allowed; pointer-events: none; }
+    .btn.alt { background: var(--surface2); color: var(--text); border: 1px solid var(--line); }
+    .btn.alt:hover { background: #2a2a31; }
+
+    /* ---------- Heading & tabs ---------- */
+    .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+    .head h1 { margin: 0 0 10px; font-size: 1.25rem; font-weight: 700; }
+    .head p { margin: 0 0 10px; color: var(--muted); font-size: .85rem; }
+    .tabs { display: flex; gap: 22px; }
+    .tab { padding: 0 0 10px; color: var(--muted); text-decoration: none; font-size: .92rem; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+    .sect { margin: 0 0 16px; color: var(--muted); }
+    .sect b { color: var(--text); font-weight: 600; }
+
+    /* ---------- Grid & cards ---------- */
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    @media (min-width: 900px) { .grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 20px; } }
+    .card { display: flex; flex-direction: column; gap: 8px; color: inherit; text-decoration: none; }
+    .cover { position: relative; border-radius: var(--radius); overflow: hidden; background: var(--surface); aspect-ratio: 3 / 4; border: 1px solid var(--line); transition: border-color .15s; }
+    .card:hover .cover { border-color: var(--accent); }
+    .thumb { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--surface2); }
+    .chap {
+      position: absolute; left: 6px; bottom: 6px;
+      background: #000000b8; color: #fff; font-size: .7rem; font-weight: 600; padding: 3px 8px; border-radius: 6px;
+    }
+    .title { font-weight: 500; line-height: 1.35; font-size: .88rem;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card:hover .title { color: var(--accent-h); }
+
+    /* skeleton */
+    .skel .cover, .skel .line { background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shine 1.3s infinite linear; }
+    .skel .cover { border-color: transparent; }
+    .skel .line { height: 12px; border-radius: 6px; width: 75%; }
+    @keyframes shine { to { background-position: -200% 0; } }
+
+    .pager { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 32px; }
+    .pager span { color: var(--muted); font-size: .88rem; min-width: 90px; text-align: center; }
+    .msg { text-align: center; color: var(--muted); padding: 50px 16px; }
+    .err { color: #f08a96; }
+
+    /* ---------- Detail ---------- */
+    .detail { display: grid; gap: 24px; margin-top: 16px; }
+    @media (min-width: 760px) { .detail { grid-template-columns: 260px 1fr; gap: 32px; } .detail .poster { position: sticky; top: 80px; align-self: start; } }
+    .poster img, .poster div { width: 100%; border-radius: var(--radius); border: 1px solid var(--line); display: block; aspect-ratio: 3/4; object-fit: cover; background: var(--surface); }
+    .detail h1 { margin: 0 0 10px; font-size: clamp(1.3rem, 4vw, 1.8rem); line-height: 1.25; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 14px; }
+    .chip { background: var(--surface2); color: var(--muted); font-size: .76rem; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); }
+    .chip.status { color: var(--text); border-color: var(--accent); }
+    .syn { color: #c2c2cc; line-height: 1.7; font-size: .92rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+    .detail h3 { margin: 22px 0 0; font-size: 1rem; }
+    .chapters { list-style: none; margin: 12px 0 0; padding: 0 4px 0 0; display: grid; gap: 6px; max-height: 540px; overflow: auto; }
+    .chapters::-webkit-scrollbar { width: 8px; }
+    .chapters::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+    .chapters li a {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 11px 14px;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      text-decoration: none; font-size: .9rem; transition: border-color .15s, background .15s;
+    }
+    .chapters li a:hover { border-color: var(--accent); background: var(--surface2); }
+    .chapters small { color: var(--dim); white-space: nowrap; }
+
+    /* ---------- Reader ---------- */
+    #progress { position: fixed; top: 0; left: 0; height: 2px; width: 0; background: var(--accent); z-index: 50; }
+    .reader { max-width: 820px; margin: 14px auto; }
+    .reader img { display: block; width: 100%; height: auto; min-height: 220px; background: var(--surface); }
+    .readnav { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+    #top {
+      position: fixed; right: 16px; bottom: 18px; z-index: 30; width: 42px; height: 42px; padding: 0; border-radius: 50%;
+      background: var(--surface2); border: 1px solid var(--line); color: var(--text);
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    #top:hover { background: #2a2a31; }
+    #top.show { opacity: 1; pointer-events: auto; }
+
+    code { background: var(--surface); padding: 2px 6px; border-radius: 6px; font-size: .85rem; word-break: break-all; }
+    footer { text-align: center; color: var(--dim); font-size: .8rem; padding: 10px 16px 30px; border-top: 1px solid var(--line); max-width: 1180px; margin: 0 auto; padding-top: 20px; }
+  </style>
+</head>
+<body>
+  <div id="progress"></div>
+  <header>
+    <div class="bar">
+      <a class="logo" href="#/">Neko<span>Read</span></a>
+      <form id="search" autocomplete="off">
+        <input id="q" type="search" placeholder="Cari manga, manhwa, manhua..." />
+        <button type="submit">Cari</button>
+      </form>
+      <div id="who"></div>
+    </div>
+  </header>
+  <main id="app"></main>
+  <footer>NekoRead — baca manga, manhwa, dan manhua</footer>
+  <button id="top" aria-label="Ke atas" title="Ke atas">↑</button>
+
+  <script>
+    const app = document.getElementById('app');
+    const enc = encodeURIComponent;
+
+    // Di dalam Discord Activity, gambar luar diblokir CSP -> lewat URL Mapping Discord
+    const IN_DISCORD = new URLSearchParams(location.search).has('frame_id');
+    // Domain gambar dari REST API -> prefix URL Mapping di Discord
+    const MAP = { 'assets.shngm.id': '/shngm' };
+    const pic = (u) => {
+      if (!IN_DISCORD || !u) return u;
+      try {
+        const x = new URL(u);
+        if (MAP[x.hostname]) return '/.proxy' + MAP[x.hostname] + x.pathname + x.search;
+      } catch { /* bukan URL valid */ }
+      return u;
+    };
+
+    const SITE = 'NekoRead';
+    const setTitle = (t) => { document.title = t ? `${t} — ${SITE}` : `${SITE} — Baca Manga, Manhwa & Manhua`; };
+
+    // ---------- Helper ----------
+    function el(tag, props = {}, ...children) {
+      const node = document.createElement(tag);
+      for (const [k, v] of Object.entries(props)) {
+        if (k === 'class') node.className = v;
+        else if (k === 'text') node.textContent = v;
+        else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+        else node.setAttribute(k, v);
+      }
+      node.append(...children.filter(Boolean));
+      return node;
+    }
+    const msg = (text, cls = '') => app.replaceChildren(el('p', { class: 'msg ' + cls, text }));
+
+    const skeleton = (n = 12) => {
+      const g = el('div', { class: 'grid' });
+      for (let i = 0; i < n; i++) g.append(el('div', { class: 'card skel' }, el('div', { class: 'cover' }), el('div', { class: 'line' })));
+      return g;
+    };
+
+    async function getJSON(url) {
+      const r = await fetch(url);
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.detail || data.error || 'Error ' + r.status);
+      return data;
+    }
+
+    // ---------- Router (hash) ----------
+    function route() {
+      const hash = location.hash.slice(1) || '/';
+      const i = hash.indexOf('?');
+      const pathPart = i < 0 ? hash : hash.slice(0, i);
+      const q = new URLSearchParams(i < 0 ? '' : hash.slice(i + 1));
+      window.scrollTo(0, 0);
+      document.getElementById('progress').style.width = '0';
+      document.body.dataset.view = 'list';
+
+      if (pathPart.startsWith('/detail/')) return showDetail(decodeURIComponent(pathPart.slice(8)));
+      if (pathPart.startsWith('/read/')) { document.body.dataset.view = 'read'; return showRead(decodeURIComponent(pathPart.slice(6)), q.get('m') || ''); }
+
+      const search = pathPart === '/search' ? (q.get('q') || '') : '';
+      document.getElementById('q').value = search;
+      showList(q.get('type') === 'latest' ? 'latest' : 'popular', Number(q.get('page')) || 1, search);
+    }
+    window.addEventListener('hashchange', route);
+
+    document.getElementById('search').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const s = document.getElementById('q').value.trim();
+      location.hash = s ? '#/search?q=' + enc(s) : '#/';
+    });
+
+    // Progress bar baca + tombol ke atas
+    const topBtn = document.getElementById('top');
+    window.addEventListener('scroll', () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      if (document.body.dataset.view === 'read' && max > 0) {
+        document.getElementById('progress').style.width = Math.min(100, (h.scrollTop / max) * 100) + '%';
+      }
+      topBtn.classList.toggle('show', h.scrollTop > 600);
+    }, { passive: true });
+    topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    // ---------- Daftar / pencarian ----------
+    async function showList(type, page, search) {
+      setTitle(search ? `Cari "${search}"` : '');
+      app.replaceChildren(skeleton());
+      try {
+        const json = search
+          ? await getJSON(`/api/search?q=${enc(search)}&page=${page}`)
+          : await getJSON(`/api/list?type=${type}&page=${page}`);
+        const items = json.data || [];
+        const go = (p) => {
+          location.hash = search ? `#/search?q=${enc(search)}&page=${p}` : `#/?type=${type}&page=${p}`;
+        };
+
+        const view = [];
+        if (!search) {
+          view.push(el('div', { class: 'head' },
+            el('div', {},
+              el('h1', { text: 'Jelajahi Komik' }),
+              el('p', { text: 'Manga, manhwa, dan manhua' })
+            ),
+            el('div', { class: 'tabs' },
+              el('a', { class: 'tab' + (type === 'popular' ? ' active' : ''), href: '#/?type=popular', text: 'Populer' }),
+              el('a', { class: 'tab' + (type === 'latest' ? ' active' : ''), href: '#/?type=latest', text: 'Terbaru' })
+            )
+          ));
+        } else {
+          view.push(el('p', { class: 'sect' }, 'Hasil pencarian: ', el('b', { text: `"${search}"` })));
+        }
+
+        if (!items.length) {
+          view.push(el('p', { class: 'msg', text: search ? `Tidak ada hasil untuk "${search}".` : 'Tidak ada komik.' }));
+          if (page > 1) view.push(el('div', { class: 'pager' }, el('button', { text: '← Sebelumnya', onclick: () => go(page - 1) })));
+          return app.replaceChildren(...view);
+        }
+
+        const grid = el('div', { class: 'grid' });
+        for (const it of items) {
+          grid.append(
+            el('a', { class: 'card', href: '#/detail/' + enc(it.param) },
+              el('div', { class: 'cover' },
+                it.thumbnail
+                  ? el('img', { class: 'thumb', src: pic(it.thumbnail), alt: it.title, loading: 'lazy', referrerpolicy: 'no-referrer' })
+                  : el('div', { class: 'thumb' }),
+                it.latest_chapter ? el('span', { class: 'chap', text: it.latest_chapter }) : null
+              ),
+              el('div', { class: 'title', text: it.title })
+            )
+          );
+        }
+        view.push(grid, el('div', { class: 'pager' },
+          el('button', { text: '← Sebelumnya', onclick: () => go(page - 1), ...(page > 1 ? {} : { disabled: '' }) }),
+          el('span', { text: 'Halaman ' + page }),
+          el('button', { text: 'Berikutnya →', onclick: () => go(page + 1), ...(json.hasNext ? {} : { disabled: '' }) })
+        ));
+        app.replaceChildren(...view);
+      } catch (e) {
+        msg('Gagal memuat: ' + e.message, 'err');
+      }
+    }
+
+    // ---------- Detail ----------
+    async function showDetail(id) {
+      setTitle('');
+      app.replaceChildren(skeleton(4));
+      try {
+        const [det, ch] = await Promise.all([
+          getJSON('/api/detail/' + enc(id)),
+          getJSON('/api/chapters/' + enc(id)).catch(() => ({ data: [] })),
+        ]);
+        const d = det.data || {};
+        const genres = d.genre || [];
+        const chapters = ch.data || [];
+        const readHref = (c) => `#/read/${enc(c.param)}?m=${enc(id)}`;
+        setTitle(d.title || '');
+
+        const right = el('div', {}, el('h1', { text: d.title || 'Tanpa judul' }));
+        const chips = [];
+        if (d.status) chips.push(el('span', { class: 'chip status', text: d.status }));
+        genres.forEach((g) => chips.push(el('span', { class: 'chip', text: g })));
+        if (chips.length) right.append(el('div', { class: 'chips' }, ...chips));
+        right.append(el('p', { class: 'syn', text: d.synopsis || 'Sinopsis belum tersedia.' }));
+
+        if (chapters.length) {
+          const newest = chapters[0];
+          const oldest = chapters[chapters.length - 1];
+          right.append(
+            el('div', { class: 'actions' },
+              el('a', { class: 'btn', href: readHref(oldest), text: 'Mulai baca ' + oldest.chapter }),
+              el('a', { class: 'btn alt', href: readHref(newest), text: 'Terbaru: ' + newest.chapter })
+            ),
+            el('h3', { text: `Daftar Chapter (${chapters.length})` })
+          );
+          const ul = el('ul', { class: 'chapters' });
+          for (const c of chapters) {
+            ul.append(el('li', {}, el('a', { href: readHref(c) }, el('span', { text: c.chapter }), el('small', { text: c.release || '' }))));
+          }
+          right.append(ul);
+        } else {
+          right.append(el('p', { class: 'syn', text: 'Belum ada chapter.' }));
+        }
+
+        app.replaceChildren(
+          el('p', {}, el('a', { class: 'btn alt', href: '#/', text: '← Kembali' })),
+          el('div', { class: 'detail' },
+            el('div', { class: 'poster' }, d.thumbnail ? el('img', { src: pic(d.thumbnail), alt: d.title || '', referrerpolicy: 'no-referrer' }) : el('div')),
+            right)
+        );
+      } catch (e) {
+        msg('Gagal memuat detail: ' + e.message, 'err');
+      }
+    }
+
+    // ---------- Baca chapter ----------
+    async function showRead(chapterId, mangaId) {
+      msg('Memuat chapter...');
+      try {
+        const [pg, ch] = await Promise.all([
+          getJSON('/api/pages/' + enc(chapterId)),
+          mangaId ? getJSON('/api/chapters/' + enc(mangaId)).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+        ]);
+        const pages = pg.data || [];
+        const list = ch.data || [];
+        const idx = list.findIndex((c) => c.param === chapterId);
+        // list urut terbaru -> terlama
+        const newer = idx > 0 ? list[idx - 1] : null;
+        const older = idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null;
+        setTitle(idx >= 0 ? list[idx].chapter : 'Baca');
+        const link = (c, text) => el('a', {
+          class: 'btn' + (c ? '' : ' off'),
+          href: c ? `#/read/${enc(c.param)}?m=${enc(mangaId)}` : '#',
+          text,
+        });
+        const nav = () => el('div', { class: 'readnav' },
+          link(older, '← Sebelumnya'),
+          el('a', { class: 'btn alt', href: mangaId ? '#/detail/' + enc(mangaId) : '#/', text: 'Daftar chapter' }),
+          link(newer, 'Berikutnya →')
+        );
+
+        if (!pages.length) {
+          return app.replaceChildren(nav(),
+            el('p', { class: 'msg', text: 'Halaman chapter tidak ditemukan di respons API.' }),
+            el('p', { class: 'msg' }, 'Buka ', el('code', { text: '/api/raw?path=/api/manga/chapter/' + chapterId + '/pages' }), ' lalu kirim hasilnya supaya bisa disesuaikan.')
+          );
+        }
+        const reader = el('div', { class: 'reader' });
+        for (const src of pages) reader.append(el('img', { src: pic(src), loading: 'lazy', alt: '', referrerpolicy: 'no-referrer' }));
+        app.replaceChildren(nav(), reader, nav());
+      } catch (e) {
+        msg('Gagal memuat chapter: ' + e.message, 'err');
+      }
+    }
+
+    // Daftar orang yang sedang ada di Activity (diisi oleh /discord.js)
+    window.addEventListener('discord-users', (e) => {
+      const who = document.getElementById('who');
+      who.replaceChildren(...e.detail.map((u) => u.avatarUrl
+        ? el('img', { class: 'ava', src: pic(u.avatarUrl), title: u.name, alt: u.name })
+        : el('span', { class: 'ava', title: u.name, text: (u.name || '?')[0].toUpperCase() })));
+    });
+
+    route();
+  </script>
+  <script type="module" src="/discord.js"></script>
+</body>
+</html>
