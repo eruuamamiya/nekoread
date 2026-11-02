@@ -27,6 +27,18 @@ async function upstream(p) {
   return json;
 }
 
+function readBody(req, limit = 10000) {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.on('data', (c) => {
+      data += c;
+      if (data.length > limit) { reject(new Error('body terlalu besar')); req.destroy(); }
+    });
+    req.on('end', () => resolve(data));
+    req.on('error', reject);
+  });
+}
+
 const pick = (o, keys) => {
   if (!o || typeof o !== 'object') return undefined;
   for (const k of keys) {
@@ -200,6 +212,26 @@ const server = http.createServer(async (req, res) => {
       const target = qp('path');
       if (!target.startsWith('/api/')) return send(res, 400, { error: 'path harus diawali /api/' });
       return send(res, 200, await upstream(target));
+    }
+
+    // Tukar kode OAuth2 Discord -> access_token (untuk Rich Presence di Activity)
+    // Butuh env DISCORD_CLIENT_SECRET (client id dikirim dari /discord.js, atau env DISCORD_CLIENT_ID)
+    if (p === '/api/token' && req.method === 'POST') {
+      let body = {};
+      try { body = JSON.parse(await readBody(req)); } catch { /* body kosong / bukan JSON */ }
+      if (!body.code) return send(res, 400, { error: 'code kosong' });
+      const clientId = String(body.client_id || process.env.DISCORD_CLIENT_ID || '');
+      const secret = process.env.DISCORD_CLIENT_SECRET || '';
+      if (!clientId || !secret) return send(res, 500, { error: 'DISCORD_CLIENT_SECRET belum di-set di server' });
+      const r = await fetch('https://discord.com/api/oauth2/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ client_id: clientId, client_secret: secret, grant_type: 'authorization_code', code: String(body.code) }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.access_token) return send(res, 400, { error: 'Tukar token gagal', detail: j.error_description || j.error || r.status });
+      return send(res, 200, { access_token: j.access_token });
     }
 
     if (p === '/discord.js') {
